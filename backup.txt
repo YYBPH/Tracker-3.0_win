@@ -1,0 +1,90 @@
+#include <opencv2/opencv.hpp>
+#include "KalmanFilter.hpp"
+
+// 鼠标事件回调函数
+void onMouse(int event, int x, int y, int flags, void* userdata) {
+    if (event == cv::EVENT_LBUTTONDOWN) {
+        cv::Point2f* mouse_position = static_cast<cv::Point2f*>(userdata);
+        mouse_position->x = static_cast<float>(x);
+        mouse_position->y = static_cast<float>(y);
+    }
+}
+
+int main() {
+    // 创建Kalman滤波器
+    KalmanFilter kalman;
+
+    // 初始化Kalman滤波器参数（根据你的需求调整）
+    Eigen::VectorXd initial_state(4);  // [x, y, vx, vy]
+    initial_state << 0, 0, 0, 0;
+
+    Eigen::MatrixXd initial_covariance(4, 4);
+    initial_covariance << 1, 0, 0, 0,
+                          0, 1, 0, 0,
+                          0, 0, 1, 0,
+                          0, 0, 0, 1;
+
+    Eigen::MatrixXd transition_matrix(4, 4);
+    transition_matrix << 1, 0, 1, 0,
+                         0, 1, 0, 1,
+                         0, 0, 1, 0,
+                         0, 0, 0, 1;
+
+    Eigen::MatrixXd measurement_matrix(2, 4);
+    measurement_matrix << 1, 0, 0, 0,
+                          0, 1, 0, 0;
+
+    Eigen::MatrixXd process_noise_covariance(4, 4);
+    process_noise_covariance << 0.1, 0, 0, 0,
+                                0, 0.1, 0, 0,
+                                0, 0, 0.1, 0,
+                                0, 0, 0, 0.1;
+
+    Eigen::MatrixXd measurement_noise_covariance(2, 2);
+    measurement_noise_covariance << 1, 0,
+                                     0, 1;
+
+    kalman.initialize(initial_state, initial_covariance, transition_matrix,
+                      measurement_matrix, process_noise_covariance, measurement_noise_covariance);
+
+    // 创建白色背景
+    cv::Mat background(500, 800, CV_8UC3, cv::Scalar(255, 255, 255));
+
+    // 鼠标位置
+    cv::Point2f mouse_position(0, 0);
+
+    // 创建窗口
+    cv::namedWindow("Kalman Filter Mouse Tracker");
+
+    // 设置鼠标事件回调函数
+    cv::setMouseCallback("Kalman Filter Mouse Tracker", onMouse, &mouse_position);
+
+
+    while (true) {
+        // 在图像上绘制鼠标位置（真实位置）
+        cv::circle(background, cv::Point(mouse_position.x, mouse_position.y), 10, cv::Scalar(0, 255, 0), -1);
+
+        // 使用Kalman滤波器进行预测和更新
+        Eigen::VectorXd measurement(2);
+        measurement << mouse_position.x, mouse_position.y;
+
+        kalman.predict();
+        kalman.update(measurement);
+
+        // 获取预测后的位置
+        Eigen::VectorXd predicted_state = kalman.getState();
+
+        // 在图像上绘制Kalman预测位置
+        cv::circle(background, cv::Point(predicted_state(0), predicted_state(1)), 10, cv::Scalar(0, 0, 255), -1);
+
+        // 显示图像
+        cv::imshow("Kalman Filter Mouse Tracker", background);
+
+        // 检测按键，退出循环
+        if (cv::waitKey(30) == 27) {
+            break;
+        }
+    }
+
+    return 0;
+}
