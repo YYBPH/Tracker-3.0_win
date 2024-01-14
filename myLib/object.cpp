@@ -63,6 +63,8 @@ void Object::ReinitKalmanFilter(cv::Rect newRect)
     // 初始化Kalman滤波器参数（根据你的需求调整）
     Eigen::VectorXd initial_state(6);  // [x, y, w, h, vx, vy]
     initial_state << newRect.x, newRect.y, newRect.width, newRect.height, 0, 0;
+    // initial_state << 0, 0, 0, 0, 0, 0;
+    this->newRect = newRect;            // 同时初始化，防止预测不上
 
     // P 维度与状态向量的维度相同
     Eigen::MatrixXd initial_covariance = Eigen::MatrixXd(6, 6);

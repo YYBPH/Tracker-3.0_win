@@ -28,6 +28,16 @@ cv::Mat ObjectsTracker::tracker(Mat newframe)
 {
     this->original_frame = newframe;
 
+    // 如果无 1号目标，重选 1号为目标
+    if(hasObjFlag == false && this->rects.size() > 0)
+    {
+        object.ReinitKalmanFilter(this->rects[0]);
+        printf("new rect:%d %d %d %d\r\n", this->rects[0].x, this->rects[0].y, this->rects[0].width, this->rects[0].height);
+        hasObjFlag = true;
+    }
+
+
+
     /**** 1. 获取运动候选框  *************************************/
     Mat grayFrame, mog2MaskFrame, erodeFrame, dilateFrame;
     cvtColor(newframe, grayFrame, cv::COLOR_BGR2GRAY);
@@ -45,60 +55,46 @@ cv::Mat ObjectsTracker::tracker(Mat newframe)
         this->rects.push_back(rect);
     }
 
-    // 如果无 1号目标，重选 1号为目标
-    if(hasObjFlag == false )
-    {
-        if(this->rects.size() > 0)
-        {
-            object.ReinitKalmanFilter(this->rects[0]);
-            printf("new rect:%d %d %d %d\r\n", this->rects[0].x, this->rects[0].y, this->rects[0].width, this->rects[0].height);
-            hasObjFlag = true;
 
-            cv::rectangle(this->original_frame, this->object.newRect, cv::Scalar(255, 0, 0), 3);
-            for (size_t i = 0; i < this->rects.size(); i++)
-            {
-                cv::rectangle(this->original_frame, this->rects[i], cv::Scalar(0, 0, 0), 2);
-            }
-
-            return this->original_frame;
-        }
-        else return this->original_frame;
-    }
 
     /** 2. object更新  *************************************/
-    // 1. 寻找最近的Rect
-    double clostDist = DBL_MAX;
-    Rect clostRect;
-    for(size_t i = 0; i < this->rects.size(); i++)
+    if(this->rects.size() == 0)
     {
-        double dist = calculateRectDistance(this->object.newRect, this->rects[i]);
-        if(dist < clostDist)
-        {
-            clostDist = dist;
-            clostRect = rects[i];
-        }
-    }
-    // 找到
-    if(clostDist != DBL_MAX && clostDist < 100)
-    {
-        this->object.disap_times = 0;
-        this->object.kalmanFilter(clostRect);
+        this->object.kalmanFilter(this->object.newRect);
     }
     else
     {
-        this->object.kalmanFilter(this->object.newRect);
-        this->object.disap_times++;
-        printf("disap_times:%d\r\n", this->object.disap_times);
-        if(this->object.disap_times > 5)
+        // 1. 寻找最近的Rect
+        double clostDist = DBL_MAX;
+        Rect clostRect;
+        for(size_t i = 0; i < this->rects.size(); i++)
         {
-            this->hasObjFlag = false;
-            printf("hasObjFlag = false\r\n");
+            double dist = calculateRectDistance(this->object.newRect, this->rects[i]);
+            if(dist < clostDist)
+            {
+                clostDist = dist;
+                clostRect = rects[i];
+            }
         }
+        // 找到
+        if(clostDist < 100)
+        {
+            this->object.disap_times = 0;
+            this->object.kalmanFilter(clostRect);
+        }
+        else
+        {
+            this->object.kalmanFilter(this->object.newRect);
+            this->object.disap_times++;
+            printf("disap_times:%d\r\n", this->object.disap_times);
+            if(this->object.disap_times > 5)
+            {
+                this->hasObjFlag = false;
+                printf("hasObjFlag = false\r\n");
+            }
+        }
+
     }
-
-    // 2. kalmen预测
-    // this->object.newRect = this->object.kalmanFilter(clostRect);
-
 
 
     /** 3. drawInfo  *************************************/

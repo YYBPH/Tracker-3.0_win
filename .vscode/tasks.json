@@ -11,7 +11,8 @@
                 "${workspaceFolder}\\main.cpp",
                 "${workspaceFolder}\\myLib\\*.cpp",
                 "-o",
-                "${fileDirname}\\${fileBasenameNoExtension}.exe",
+                // "${fileDirname}\\${fileBasenameNoExtension}.exe",
+                "${workspaceFolder}\\main.exe",
 
                 "-I", "${workspaceFolder}",
 
