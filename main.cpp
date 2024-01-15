@@ -9,7 +9,7 @@ int main()
 {
     cv::VideoCapture cap;
 
-    cap.open("./output.avi");
+    cap.open("./test1.mp4");
 
     if (cap.isOpened() == false) {
         printf("\r\n\r\n**************************************************************\r\n");
@@ -20,14 +20,14 @@ int main()
 
     ObjectsTracker objectsTracker;
 
+    cv::namedWindow("newFrame", cv::WINDOW_NORMAL);
+    cv::resizeWindow("newFrame", cv::Size(800, 600));
 
     while (1)
     {   
         // 获取新图像
         Mat newFrame;
         cap >> newFrame;
-        // resize(newFrame, newFrame, Size(newFrame.cols/3, newFrame.rows/3), 0, 0);
-        // resize(newFrame, newFrame, Size(800, 640), 0, 0);
 
         if (!newFrame.empty()) 
         {
@@ -36,7 +36,7 @@ int main()
 
             imshow("newFrame", newFrame);
 
-            int key = cv::waitKey(100);
+            int key = cv::waitKey(10);
             if (key == 27)
                 break;
 

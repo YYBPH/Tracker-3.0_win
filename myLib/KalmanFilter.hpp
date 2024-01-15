@@ -3,10 +3,10 @@
 
 #include <Eigen/Dense>
 
-class KalmanFilter {
+class MyKalmanFilter {
 public:
-    KalmanFilter();
-    ~KalmanFilter();
+    MyKalmanFilter();
+    ~MyKalmanFilter();
 
     void initialize(const Eigen::VectorXd& initial_state,
                     const Eigen::MatrixXd& initial_covariance,
@@ -19,7 +19,6 @@ public:
     void update(const Eigen::VectorXd& measurement);
 
     Eigen::VectorXd getState() const;
-    Eigen::MatrixXd getCovariance() const;
 
 private:
     Eigen::VectorXd state;                   // 状态向量

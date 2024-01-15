@@ -22,6 +22,7 @@ ObjectsTracker::ObjectsTracker()
 
 ObjectsTracker::~ObjectsTracker()
 {
+    
 }
 
 cv::Mat ObjectsTracker::tracker(Mat newframe)
@@ -40,14 +41,15 @@ cv::Mat ObjectsTracker::tracker(Mat newframe)
 
     /**** 1. 获取运动候选框  *************************************/
     Mat grayFrame, mog2MaskFrame, erodeFrame, dilateFrame;
-    cvtColor(newframe, grayFrame, cv::COLOR_BGR2GRAY);
-    this->MOG2->apply(grayFrame, mog2MaskFrame);
-    // erode(mog2MaskFrame, erodeFrame, kernel_erode, Point(-1, -1), 1, cv::BORDER_CONSTANT, cv::Scalar(0));
+    // cvtColor(newframe, grayFrame, cv::COLOR_BGR2GRAY);
+    this->MOG2->apply(newframe, mog2MaskFrame);
+    // imshow("mog2MaskFrame", mog2MaskFrame);
+    erode(mog2MaskFrame, erodeFrame, kernel_erode, Point(-1, -1), 1, cv::BORDER_CONSTANT, cv::Scalar(0));
     // dilate(erodeFrame, dilateFrame, kernel_dilate, Point(-1, -1), 1, cv::BORDER_CONSTANT, cv::Scalar(0));
      
     this->rects.clear();
     vector<vector<Point>> contours;
-    findContours(mog2MaskFrame, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+    findContours(erodeFrame, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
     for (size_t i = 0; i < contours.size(); i++) 
     {
         if (contourArea(contours[i]) < 4) continue;     // 重选时，也要注意此目标
@@ -98,11 +100,11 @@ cv::Mat ObjectsTracker::tracker(Mat newframe)
 
 
     /** 3. drawInfo  *************************************/
-    cv::rectangle(this->original_frame, this->object.newRect, cv::Scalar(255, 0, 0), 3);
     for (size_t i = 0; i < this->rects.size(); i++)
     {
-        cv::rectangle(this->original_frame, this->rects[i], cv::Scalar(0, 0, 0), 2);
+        cv::rectangle(this->original_frame, this->rects[i], cv::Scalar(0, 0, 255), 1);
     }
+    cv::rectangle(this->original_frame, this->object.newRect, cv::Scalar(255, 255, 0), 1);
 
     return this->original_frame;
 }

@@ -1,9 +1,9 @@
 #include "KalmanFilter.hpp"
 
-KalmanFilter::KalmanFilter() {}
-KalmanFilter::~KalmanFilter() {}
+MyKalmanFilter::MyKalmanFilter() {}
+MyKalmanFilter::~MyKalmanFilter() {}
 
-void KalmanFilter::initialize(const Eigen::VectorXd& initial_state,
+void MyKalmanFilter::initialize(const Eigen::VectorXd& initial_state,
                                const Eigen::MatrixXd& initial_covariance,
                                const Eigen::MatrixXd& transition_matrix,
                                const Eigen::MatrixXd& measurement_matrix,
@@ -17,13 +17,13 @@ void KalmanFilter::initialize(const Eigen::VectorXd& initial_state,
     this->measurement_noise_cov = measurement_noise_covariance;
 }
 
-void KalmanFilter::predict() {
+void MyKalmanFilter::predict() {
     // 预测步骤
     state = transition_matrix * state;
     covariance = transition_matrix * covariance * transition_matrix.transpose() + process_noise_cov;
 }
 
-void KalmanFilter::update(const Eigen::VectorXd& measurement) {
+void MyKalmanFilter::update(const Eigen::VectorXd& measurement) {
     // 更新步骤
     Eigen::MatrixXd kalman_gain = covariance * measurement_matrix.transpose() *
                                   (measurement_matrix * covariance * measurement_matrix.transpose() +
@@ -33,10 +33,7 @@ void KalmanFilter::update(const Eigen::VectorXd& measurement) {
     covariance = (Eigen::MatrixXd::Identity(state.size(), state.size()) - kalman_gain * measurement_matrix) * covariance;
 }
 
-Eigen::VectorXd KalmanFilter::getState() const {
+Eigen::VectorXd MyKalmanFilter::getState() const {
     return state;
 }
 
-Eigen::MatrixXd KalmanFilter::getCovariance() const {
-    return covariance;
-}
