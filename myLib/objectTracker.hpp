@@ -7,7 +7,6 @@
 
 // #include "Object.hpp"
 #include "object.hpp"
-#include "others.hpp"
 
 using namespace std;
 using namespace cv;
@@ -33,7 +32,6 @@ private:
 	vector<Rect> rects;
 
 	Object object;		// 1号目标
-    vector<Other> others;
 
 	// 标志位
 	bool hasObjFlag;

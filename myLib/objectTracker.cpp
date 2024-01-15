@@ -76,24 +76,8 @@ cv::Mat ObjectsTracker::tracker(Mat newframe)
         }
     }
 
-    /** 3. 其他目标更新  *************************************/
-    for(size_t i = 0; i < others.size(); i++)
-    {
-        cv::Rect rect = findClost(others[i].rect);
-        if(rect.width !=0 && rect.height !=0)
-            others[i].update(rect);
-        else
-            others[i].disapper();
-    }
-    for(size_t i = 0; i < others.size(); i++)
-    {
-        if(others[i].disap_times > 3)
-            others.erase(others.begin()+i);
-    }
 
-
-
-    /** 4. drawInfo  *************************************/
+    /** 3. drawInfo  *************************************/
     for (size_t i = 0; i < this->rects.size(); i++)
     {
         cv::rectangle(this->original_frame, this->rects[i], cv::Scalar(0, 0, 255), 1);
