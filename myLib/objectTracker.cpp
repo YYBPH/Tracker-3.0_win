@@ -1,4 +1,3 @@
-#include <float.h>
 #include "objectTracker.hpp"
 
 // 腐蚀内核
@@ -18,6 +17,8 @@ ObjectsTracker::ObjectsTracker()
 {
     this->MOG2 = createBackgroundSubtractorMOG2();
     this->hasObjFlag = false;
+
+    this->maxDist = 100;
 }
 
 ObjectsTracker::~ObjectsTracker()
@@ -29,6 +30,7 @@ cv::Mat ObjectsTracker::tracker(Mat newframe)
 {
     this->original_frame = newframe;
 
+    /**** 0. 1号目标判断  *************************************/
     // 如果无 1号目标，重选 1号为目标
     if(hasObjFlag == false && this->rects.size() > 0)
     {
@@ -38,78 +40,96 @@ cv::Mat ObjectsTracker::tracker(Mat newframe)
     }
 
 
-
     /**** 1. 获取运动候选框  *************************************/
     Mat grayFrame, mog2MaskFrame, erodeFrame, dilateFrame;
-    // cvtColor(newframe, grayFrame, cv::COLOR_BGR2GRAY);
     this->MOG2->apply(newframe, mog2MaskFrame);
-    // imshow("mog2MaskFrame", mog2MaskFrame);
     erode(mog2MaskFrame, erodeFrame, kernel_erode, Point(-1, -1), 1, cv::BORDER_CONSTANT, cv::Scalar(0));
-    // dilate(erodeFrame, dilateFrame, kernel_dilate, Point(-1, -1), 1, cv::BORDER_CONSTANT, cv::Scalar(0));
      
     this->rects.clear();
     vector<vector<Point>> contours;
     findContours(erodeFrame, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
     for (size_t i = 0; i < contours.size(); i++) 
     {
-        if (contourArea(contours[i]) < 4) continue;     // 重选时，也要注意此目标
+        if (contourArea(contours[i]) < 4) continue;     
         Rect rect = boundingRect(contours[i]);
         this->rects.push_back(rect);
     }
 
 
-
-    /** 2. object更新  *************************************/
-    if(this->rects.size() == 0)
+    /** 2. 1号目标更新  *************************************/
+    // 缺少删除
+    cv::Rect rect = findClost(this->object.newRect);
+    if(rect.width !=0 && rect.height !=0)
     {
-        this->object.kalmanFilter(this->object.newRect);
+        this->object.disap_times = 0;
+        this->object.kalmanFilter(rect);
     }
     else
     {
-        // 1. 寻找最近的Rect
-        double clostDist = DBL_MAX;
-        Rect clostRect;
-        for(size_t i = 0; i < this->rects.size(); i++)
+        this->object.kalmanFilter(this->object.newRect);
+        this->object.disap_times++;
+        printf("disap_times:%d\r\n", this->object.disap_times);
+        if(this->object.disap_times > 5)
         {
-            double dist = calculateRectDistance(this->object.newRect, this->rects[i]);
-            if(dist < clostDist)
-            {
-                clostDist = dist;
-                clostRect = rects[i];
-            }
+            this->hasObjFlag = false;
+            printf("hasObjFlag = false\r\n");
         }
-        // 找到
-        if(clostDist < 100)
-        {
-            this->object.disap_times = 0;
-            this->object.kalmanFilter(clostRect);
-        }
-        else
-        {
-            this->object.kalmanFilter(this->object.newRect);
-            this->object.disap_times++;
-            printf("disap_times:%d\r\n", this->object.disap_times);
-            if(this->object.disap_times > 5)
-            {
-                this->hasObjFlag = false;
-                printf("hasObjFlag = false\r\n");
-            }
-        }
+    }
 
+    /** 3. 其他目标更新  *************************************/
+    for(size_t i = 0; i < others.size(); i++)
+    {
+        cv::Rect rect = findClost(others[i].rect);
+        if(rect.width !=0 && rect.height !=0)
+            others[i].update(rect);
+        else
+            others[i].disapper();
+    }
+    for(size_t i = 0; i < others.size(); i++)
+    {
+        if(others[i].disap_times > 3)
+            others.erase(others.begin()+i);
     }
 
 
-    /** 3. drawInfo  *************************************/
+
+    /** 4. drawInfo  *************************************/
     for (size_t i = 0; i < this->rects.size(); i++)
     {
         cv::rectangle(this->original_frame, this->rects[i], cv::Scalar(0, 0, 255), 1);
     }
-    cv::rectangle(this->original_frame, this->object.newRect, cv::Scalar(255, 255, 0), 1);
+    if(this->hasObjFlag == true)
+        cv::rectangle(this->original_frame, this->object.newRect, cv::Scalar(255, 255, 0), 1);
 
     return this->original_frame;
 }
 
 
+// 在this->rects中找到最近的方框
+cv::Rect ObjectsTracker::findClost(const cv::Rect rect)
+{
+    double clostDist = DBL_MAX;
+    Rect clostRect;
+
+    for(size_t i = 0; i < this->rects.size(); i++)
+    {
+        double dist = calculateRectDistance(rect, this->rects[i]);
+        if(dist < clostDist)
+        {
+            clostDist = dist;
+            clostRect = rects[i];
+        }
+    }
+
+    if(clostDist < this->maxDist)
+        return clostRect;
+    else
+    {
+        clostRect.width = 0;
+        clostRect.height = 0;
+        return clostRect;
+    }
+}
 
 // 计算两个矩形的中心点之间的欧氏距离
 double ObjectsTracker::calculateRectDistance(const cv::Rect& rect1, const cv::Rect& rect2) {

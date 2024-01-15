@@ -3,12 +3,17 @@
 
 #include <opencv2/opencv.hpp>
 #include <vector>
+#include <float.h>
 
 // #include "Object.hpp"
 #include "object.hpp"
+#include "others.hpp"
 
 using namespace std;
 using namespace cv;
+
+
+
 
 
 class ObjectsTracker
@@ -27,17 +32,20 @@ private:
 
 	vector<Rect> rects;
 
-	Object object;
-
-
+	Object object;		// 1号目标
+    vector<Other> others;
 
 	// 标志位
 	bool hasObjFlag;
+
+	// 阈值
+	double maxDist;
 
 
 	
 
 private:
+	cv::Rect findClost(const cv::Rect rect);	
 	double calculateRectDistance(const cv::Rect& rect1, const cv::Rect& rect2);
 
 };

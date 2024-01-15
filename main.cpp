@@ -9,7 +9,7 @@ int main()
 {
     cv::VideoCapture cap;
 
-    cap.open("./test1.mp4");
+    cap.open(0);
 
     if (cap.isOpened() == false) {
         printf("\r\n\r\n**************************************************************\r\n");
